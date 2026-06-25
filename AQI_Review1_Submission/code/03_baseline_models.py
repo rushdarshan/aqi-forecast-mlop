@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import json
 
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
@@ -36,9 +35,6 @@ clean_enc = pd.get_dummies(clean, columns=["City"], prefix="City")
 city_dummy_cols = [c for c in clean_enc.columns if c.startswith("City_")]
 feature_cols_full = feature_cols + city_dummy_cols
 
-X = clean_enc[feature_cols_full]
-y = clean_enc[target_col]
-
 # Time-respecting split: train on earlier 80%, test on most recent 20% (per overall timeline)
 clean_enc = clean_enc.sort_values("Date")
 split_idx = int(len(clean_enc) * 0.8)
@@ -63,7 +59,6 @@ models = {
 }
 
 results = []
-predictions = {}
 
 for name, model in models.items():
     if name in ["Linear Regression", "Ridge Regression"]:
@@ -78,7 +73,6 @@ for name, model in models.items():
     r2 = r2_score(y_test, preds)
 
     results.append({"Model": name, "MAE": round(mae, 3), "RMSE": round(rmse, 3), "R2": round(r2, 4)})
-    predictions[name] = preds
     print(f"{name:20s}  MAE={mae:7.3f}  RMSE={rmse:7.3f}  R2={r2:.4f}")
 
 results_df = pd.DataFrame(results).sort_values("R2", ascending=False)
@@ -87,6 +81,13 @@ print("\n", results_df)
 
 best_model_name = results_df.iloc[0]["Model"]
 print(f"\nBest baseline model: {best_model_name}")
+
+# Re-predict best model for actual-vs-predicted plot
+best_model = models[best_model_name]
+if best_model_name in ["Linear Regression", "Ridge Regression"]:
+    best_preds = best_model.predict(X_test_scaled)
+else:
+    best_preds = best_model.predict(X_test)
 
 # ---- Plots ----
 # 1. Model comparison bar chart

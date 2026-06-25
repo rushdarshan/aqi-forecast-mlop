@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -78,17 +77,4 @@ plt.close()
 
 print("EDA figures generated:", os.listdir("figures"))
 
-# Outlier summary using IQR method (for EDA report text)
-outlier_summary = {}
-for col in pollutant_cols:
-    q1, q3 = clean[col].quantile([0.25, 0.75])
-    iqr = q3 - q1
-    lo, hi = q1 - 1.5 * iqr, q3 + 1.5 * iqr
-    n_out = ((clean[col] < lo) | (clean[col] > hi)).sum()
-    outlier_summary[col] = {"q1": round(q1, 2), "q3": round(q3, 2), "n_outliers": int(n_out),
-                             "pct_outliers": round(n_out / len(clean) * 100, 2)}
-
-import json
-with open("data/outlier_summary.json", "w") as f:
-    json.dump(outlier_summary, f, indent=2)
-print(json.dumps(outlier_summary, indent=2))
+# ponytail: outlier_summary JSON was written but never consumed — removed.

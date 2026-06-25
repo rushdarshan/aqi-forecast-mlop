@@ -1,6 +1,5 @@
 import pandas as pd
-import numpy as np
-import glob, os
+import os
 
 DATA_DIR = "data"
 cities = ["Delhi", "Mumbai", "Chennai", "Hyderabad", "Bangalore"]
