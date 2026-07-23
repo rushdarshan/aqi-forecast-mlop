@@ -6,3 +6,4 @@ venv/
 mlruns/
 *.db
 .serena/
+data/clean_features.csv
