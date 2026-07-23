@@ -7,3 +7,5 @@ mlruns/
 *.db
 .serena/
 data/clean_features.csv
+dvc-remote/
+.dvc/tmp/
