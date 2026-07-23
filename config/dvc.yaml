@@ -1,0 +1,35 @@
+stages:
+  preprocess:
+    cmd: python src/preprocess.py
+    deps:
+      - src/preprocess.py
+      - data/Delhi.csv
+      - data/Mumbai.csv
+      - data/Chennai.csv
+      - data/Hyderabad.csv
+      - data/Bangalore.csv
+    outs:
+      - data/merged_raw.csv
+      - data/clean_features.csv
+
+  train:
+    cmd: python src/train.py
+    deps:
+      - src/train.py
+      - data/clean_features.csv
+    outs:
+      - models/best_model.pkl
+      - models/scaler.pkl
+      - models/model_meta.json
+    metrics:
+      - data/model_results.csv:
+          cache: false
+
+  monitor:
+    cmd: python src/monitor.py
+    deps:
+      - src/monitor.py
+      - data/clean_features.csv
+    outs:
+      - data/drift_report.json:
+          cache: false

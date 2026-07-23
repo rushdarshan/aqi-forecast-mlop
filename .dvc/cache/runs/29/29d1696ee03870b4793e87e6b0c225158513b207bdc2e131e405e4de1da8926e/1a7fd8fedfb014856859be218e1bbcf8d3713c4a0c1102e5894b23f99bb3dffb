@@ -1,0 +1,27 @@
+cmd: python src/train.py
+deps:
+- path: data/clean_features.csv
+  hash: md5
+  md5: 0605560d64775699ea2d29ffba28411f
+  size: 1634077
+- path: src/train.py
+  hash: md5
+  md5: 1e32b467435f118114d4a5aeef403536
+  size: 4714
+outs:
+- path: data/model_results.csv
+  hash: md5
+  md5: 11711026d59e551a44e2c0b50bf2a2c5
+  size: 223
+- path: models/best_model.pkl
+  hash: md5
+  md5: f5e63c13aea860cb6223cd48e28abedf
+  size: 644
+- path: models/model_meta.json
+  hash: md5
+  md5: 1d296bc17c868ef661a76f23142ccc67
+  size: 494
+- path: models/scaler.pkl
+  hash: md5
+  md5: 122c20adc29fef13cbdc5070eeac8b81
+  size: 1101

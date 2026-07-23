@@ -1,0 +1,26 @@
+{
+  "recent_window_days": 30,
+  "n_recent_records": 155,
+  "feature_drift": {
+    "AQI_lag1": {
+      "PSI": 0.1129,
+      "status": "WARNING"
+    },
+    "AQI_lag3_avg": {
+      "PSI": 0.2058,
+      "status": "ALERT"
+    },
+    "PM2.5_lag1": {
+      "PSI": 0.1129,
+      "status": "WARNING"
+    },
+    "PM10_lag1": {
+      "PSI": 0.1129,
+      "status": "WARNING"
+    }
+  },
+  "retraining_needed": true,
+  "alert_features": [
+    "AQI_lag3_avg"
+  ]
+}

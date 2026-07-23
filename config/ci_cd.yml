@@ -1,0 +1,133 @@
+name: AQI Forecasting CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1'   # Weekly retraining trigger every Monday 2am UTC
+
+jobs:
+  # ── 1. Lint & unit tests ──────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 src/ --max-line-length=100 --ignore=E501,W503
+
+      - name: Run unit tests
+        run: |
+          pip install -e .
+          pytest src/test_pipeline.py -v --tb=short
+
+  # ── 2. Model validation gate ──────────────────────────────
+  validate-model:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Preprocess data
+        run: python src/preprocess.py
+
+      - name: Train & log models to MLflow
+        run: python src/train.py
+
+      - name: Check model gate (R² ≥ 0.85, MAE ≤ 20)
+        run: |
+          python -c "
+          import pandas as pd, sys
+          r = pd.read_csv('data/model_results.csv')
+          best_r2  = r['R2'].max()
+          best_mae = r['MAE'].min()
+          print(f'Best R2={best_r2:.4f}  Best MAE={best_mae:.3f}')
+          if best_r2 < 0.85:
+              print('FAIL: R2 below 0.85 gate'); sys.exit(1)
+          if best_mae > 20:
+              print('FAIL: MAE above 20 gate'); sys.exit(1)
+          print('PASS: Model meets production quality gate')
+          "
+
+  # ── 3. Docker build & push ────────────────────────────────
+  docker-build:
+    needs: validate-model
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t aqi-forecast-api:${{ github.sha }} .
+          docker tag aqi-forecast-api:${{ github.sha }} aqi-forecast-api:latest
+
+      - name: Run API smoke test inside container
+        run: |
+          docker run -d --name aqi-test -p 8000:8000 aqi-forecast-api:latest
+          sleep 10
+          curl -f http://localhost:8000/health || exit 1
+          docker stop aqi-test
+
+  # ── 4. Deploy (main branch only) ─────────────────────────
+  deploy:
+    needs: docker-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to production
+        run: echo "Deploy step — push Docker image to registry and restart service"
+
+  # ── 5. Drift check (scheduled only) ──────────────────────
+  drift-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Preprocess data
+        run: python src/preprocess.py
+
+      - name: Run drift monitoring
+        run: python src/monitor.py
+
+      - name: Trigger retraining if drift detected
+        run: |
+          python -c "
+          import json
+          with open('data/drift_report.json') as f:
+              report = json.load(f)
+          if report['retraining_needed']:
+              print('Drift detected — triggering retraining')
+              exit(0)
+          else:
+              print('No significant drift detected')
+          "

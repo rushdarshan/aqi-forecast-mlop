@@ -1,0 +1,7 @@
+model,MAE,RMSE,R2
+LinearRegression,14.68,22.978,0.9196
+Ridge,14.681,22.979,0.9196
+GradientBoosting,14.718,23.07,0.919
+LightGBM,14.965,23.581,0.9154
+RandomForest,15.147,23.591,0.9153
+DecisionTree,16.186,27.504,0.8849

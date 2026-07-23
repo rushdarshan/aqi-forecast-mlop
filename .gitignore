@@ -1,4 +1,8 @@
 __pycache__/
 *.pyc
-.DS_Store
-*.json
+.env
+venv/
+.venv/
+mlruns/
+*.db
+.serena/

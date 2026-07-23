@@ -1,0 +1,35 @@
+cmd: python src/preprocess.py
+deps:
+- path: data/Bangalore.csv
+  hash: md5
+  md5: fa8c41d7e8ba99dc9d5ad38a269ccefc
+  size: 125722
+- path: data/Chennai.csv
+  hash: md5
+  md5: 0652865fd49d25d3b192c800b7534395
+  size: 125320
+- path: data/Delhi.csv
+  hash: md5
+  md5: 032ea1480dd310bcd536e2a5f7b26ba0
+  size: 116130
+- path: data/Hyderabad.csv
+  hash: md5
+  md5: a1b966dcdecebab5643d1508a56d743a
+  size: 127653
+- path: data/Mumbai.csv
+  hash: md5
+  md5: f9a0fd7a1e36e76f365475f46cb10c4a
+  size: 111010
+- path: src/preprocess.py
+  hash: md5
+  md5: a037f891655625b59a1e4fb7af9317ad
+  size: 2180
+outs:
+- path: data/clean_features.csv
+  hash: md5
+  md5: 0605560d64775699ea2d29ffba28411f
+  size: 1634077
+- path: data/merged_raw.csv
+  hash: md5
+  md5: d0eba07e04d1dd07a6a254b1c9dd4fa8
+  size: 729774

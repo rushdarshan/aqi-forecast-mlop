@@ -1,0 +1,27 @@
+{
+  "best_model": "LinearRegression",
+  "needs_scale": true,
+  "features": [
+    "Month",
+    "DayOfWeek",
+    "DayOfYear",
+    "IsWeekend",
+    "AQI_lag1",
+    "AQI_lag3_avg",
+    "PM2.5_lag1",
+    "PM2.5_lag3_avg",
+    "PM10_lag1",
+    "PM10_lag3_avg",
+    "City_Bangalore",
+    "City_Chennai",
+    "City_Delhi",
+    "City_Hyderabad",
+    "City_Mumbai"
+  ],
+  "metrics": {
+    "model": "LinearRegression",
+    "MAE": 14.68,
+    "RMSE": 22.978,
+    "R2": 0.9196
+  }
+}

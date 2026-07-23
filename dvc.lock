@@ -1,0 +1,82 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: python src/preprocess.py
+    deps:
+    - path: data/Bangalore.csv
+      hash: md5
+      md5: fa8c41d7e8ba99dc9d5ad38a269ccefc
+      size: 125722
+    - path: data/Chennai.csv
+      hash: md5
+      md5: 0652865fd49d25d3b192c800b7534395
+      size: 125320
+    - path: data/Delhi.csv
+      hash: md5
+      md5: 032ea1480dd310bcd536e2a5f7b26ba0
+      size: 116130
+    - path: data/Hyderabad.csv
+      hash: md5
+      md5: a1b966dcdecebab5643d1508a56d743a
+      size: 127653
+    - path: data/Mumbai.csv
+      hash: md5
+      md5: f9a0fd7a1e36e76f365475f46cb10c4a
+      size: 111010
+    - path: src/preprocess.py
+      hash: md5
+      md5: a037f891655625b59a1e4fb7af9317ad
+      size: 2180
+    outs:
+    - path: data/clean_features.csv
+      hash: md5
+      md5: 0605560d64775699ea2d29ffba28411f
+      size: 1634077
+    - path: data/merged_raw.csv
+      hash: md5
+      md5: d0eba07e04d1dd07a6a254b1c9dd4fa8
+      size: 729774
+  train:
+    cmd: python src/train.py
+    deps:
+    - path: data/clean_features.csv
+      hash: md5
+      md5: 0605560d64775699ea2d29ffba28411f
+      size: 1634077
+    - path: src/train.py
+      hash: md5
+      md5: 1e32b467435f118114d4a5aeef403536
+      size: 4714
+    outs:
+    - path: data/model_results.csv
+      hash: md5
+      md5: 11711026d59e551a44e2c0b50bf2a2c5
+      size: 223
+    - path: models/best_model.pkl
+      hash: md5
+      md5: f5e63c13aea860cb6223cd48e28abedf
+      size: 644
+    - path: models/model_meta.json
+      hash: md5
+      md5: 1d296bc17c868ef661a76f23142ccc67
+      size: 494
+    - path: models/scaler.pkl
+      hash: md5
+      md5: 122c20adc29fef13cbdc5070eeac8b81
+      size: 1101
+  monitor:
+    cmd: python src/monitor.py
+    deps:
+    - path: data/clean_features.csv
+      hash: md5
+      md5: 0605560d64775699ea2d29ffba28411f
+      size: 1634077
+    - path: src/monitor.py
+      hash: md5
+      md5: 2256c93e950f5e24f1a4fd368dfb316f
+      size: 2856
+    outs:
+    - path: data/drift_report.json
+      hash: md5
+      md5: 2a223077da872c3b2cad878012a802c4
+      size: 475
