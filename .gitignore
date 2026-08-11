@@ -9,3 +9,5 @@ mlruns/
 data/clean_features.csv
 dvc-remote/
 .dvc/tmp/
+frontend/node_modules/
+frontend/dist/

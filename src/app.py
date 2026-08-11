@@ -8,6 +8,7 @@ import pandas as pd
 from datetime import date
 from typing import List
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
@@ -16,6 +17,14 @@ app = FastAPI(
     title="AQI Forecast API",
     description="Next-day Air Quality Index forecasting for 5 Indian cities",
     version="2.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Load model artifacts at startup
@@ -35,7 +44,9 @@ def load_artifacts():
 MODEL, SCALER, META = load_artifacts()
 
 CITIES = ["Delhi", "Mumbai", "Chennai", "Hyderabad", "Bangalore"]
-CITY_COLS = [f"City_{c}" for c in CITIES]
+# Training creates one-hot columns in alphabetical order; keep inference aligned
+# with the persisted scaler's feature order.
+CITY_COLS = [f"City_{c}" for c in sorted(CITIES)]
 FEATURE_COLS = [
     "Month", "DayOfWeek", "DayOfYear", "IsWeekend",
     "AQI_lag1", "AQI_lag3_avg",
@@ -70,10 +81,6 @@ class BatchPredictRequest(BaseModel):
     requests: List[BatchPredictItem]
 
 
-class BatchPredictResponse(BaseModel):
-    predictions: List[PredictResponse]
-
-
 class PredictResponse(BaseModel):
     city: str
     forecast_date: str
@@ -81,6 +88,10 @@ class PredictResponse(BaseModel):
     aqi_category: str
     model_used: str
     r2_score: float
+
+
+class BatchPredictResponse(BaseModel):
+    predictions: List[PredictResponse]
 
 
 def aqi_category(aqi: float) -> str:

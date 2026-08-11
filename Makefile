@@ -1,4 +1,4 @@
-.PHONY: install test run-api run-dash run-mlflow lint dvc-repro
+.PHONY: install test run-api run-dash run-frontend run-mlflow lint dvc-repro
 
 install:
 	pip install -r config/requirements.txt
@@ -11,6 +11,9 @@ run-api:
 
 run-dash:
 	streamlit run dashboard/dashboard.py
+
+run-frontend:
+	cd frontend && npm install && npm run dev
 
 run-mlflow:
 	mlflow server --host 127.0.0.1 --port 5001 --workers 1

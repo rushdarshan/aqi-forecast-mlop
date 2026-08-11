@@ -146,3 +146,24 @@ class TestAPIValidation:
         from src.app import aqi_category
         assert aqi_category(100) == "Satisfactory"
         assert aqi_category(101) == "Moderate"
+
+    def test_batch_predict_endpoint(self):
+        import os
+        if not os.path.exists(os.path.join("models", "best_model.pkl")):
+            pytest.skip("best_model.pkl not found — run train.py first")
+        from fastapi.testclient import TestClient
+        from src.app import app
+        client = TestClient(app)
+        payload = {"requests": [
+            {"city": "Delhi", "forecast_date": "2025-01-15",
+             "aqi_yesterday": 210, "aqi_3day_avg": 205,
+             "pm25_yesterday": 92.5, "pm25_3day_avg": 88.2,
+             "pm10_yesterday": 165.4, "pm10_3day_avg": 159.8},
+            {"city": "Mumbai", "forecast_date": "2025-01-15",
+             "aqi_yesterday": 120, "aqi_3day_avg": 118,
+             "pm25_yesterday": 54.2, "pm25_3day_avg": 52.8,
+             "pm10_yesterday": 98.6, "pm10_3day_avg": 95.1},
+        ]}
+        resp = client.post("/predict/batch", json=payload)
+        assert resp.status_code == 200
+        assert len(resp.json()["predictions"]) == 2
