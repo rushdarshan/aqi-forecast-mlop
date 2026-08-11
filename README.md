@@ -6,6 +6,18 @@ Next-day Air Quality Index forecasting for 5 Indian cities with an MLOps pipelin
 **Data:** 2018–2024 daily AQI, PM2.5, PM10  
 **Best Model:** Linear Regression (R² 0.9196, MAE 14.68)
 
+## Airwise Frontend
+
+The project includes a responsive React experience with live forecasts, city intelligence,
+model evidence, drift monitoring and scroll-driven motion.
+
+```bash
+make run-api       # terminal one
+make run-frontend  # terminal two — opens on http://localhost:5173
+```
+
+Set `VITE_API_URL` when the API is hosted somewhere other than `http://localhost:8000`.
+
 ## Pipeline
 
 | Stage | Description |

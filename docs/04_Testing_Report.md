@@ -7,7 +7,7 @@
 | Drift Monitoring | 4 | ✅ All passed |
 | Model Validation Gate | 2 | ✅ All passed |
 | API Validation | 4 | ✅ All passed |
-| **Total** | **18** | **✅ All passed** |
+| **Total** | **17** | **✅ All passed** |
 
 ## Test Details
 

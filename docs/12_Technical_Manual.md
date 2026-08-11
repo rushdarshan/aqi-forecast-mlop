@@ -1,0 +1,126 @@
+# Technical Manual — AQI Forecast MLOps Pipeline
+
+## 1. System Architecture
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                         GitHub Actions                         │
+│  push/PR: test → validate-model → docker-build → deploy        │
+│  weekly : drift-check → retraining trigger                     │
+└───────────────┬────────────────────────────┬───────────────────┘
+                │                            │
+   ┌────────────▼────────────┐   ┌───────────▼─────────────┐
+   │       DVC (data)        │   │      MLflow (models)    │
+   │  city CSVs → clean      │   │  6 runs/cycle, metrics  │
+   │  features → train/deps  │   │  best model persisted   │
+   └────────────┬────────────┘   └───────────┬─────────────┘
+                │                            │
+        ┌───────▼────────────────────────────▼────────┐
+        │            models/ (artifacts)             │
+        │  best_model.pkl scaler.pkl model_meta.json │
+        └───────┬────────────────────────────▲────────┘
+                │                            │
+   ┌────────────▼─────────┐      ┌───────────┴────────────┐
+   │  FastAPI (port 8000) │      │  Streamlit (port 8501) │
+   │  /predict /predict/  │      │  5-tab dashboard       │
+   │  batch /health /     │      │  PSI drift monitor     │
+   │  model-info /cities  │      │                        │
+   └──────────────────────┘      └────────────────────────┘
+```
+
+## 2. Source Code Structure
+
+```
+│
+├── .github/workflows/ci_cd.yml   # CI/CD pipeline (5 jobs)
+├── src/
+│   ├── preprocess.py             # merge, impute, feature engineering
+│   ├── train.py                  # 6 models + MLflow logging + best model
+│   ├── monitor.py                # PSI drift detection + report
+│   ├── app.py                    # FastAPI application
+│   └── test_pipeline.py          # 17 pytest cases
+├── dashboard/dashboard.py        # Streamlit monitoring UI
+├── config/
+│   ├── requirements.txt          # pinned dependencies
+│   ├── Dockerfile                # API + dashboard image
+│   └── .env.example              # environment template
+├── data/                         # DVC-tracked datasets + reports
+├── models/                       # model artifacts (DVC, cache:false)
+├── docs/                         # review documentation (I, II, III)
+├── code/                         # Review-I scripts (EDA, baseline viz)
+├── figures/  reports/            # Review-I evidence & Word documents
+├── dvc.yaml  dvc.lock            # DVC pipeline definition
+├── docker-compose.yml            # api + dashboard + mlflow
+├── Makefile                      # dev shortcuts
+└── pyproject.toml                # packaging + pytest/ruff config
+```
+
+## 3. Key Data Flow
+
+1. `preprocess.py` reads `data/{City}.csv` (5 cities), concatenates, imputes
+   pollutants (city-wise ffill/bfill, median fallback), dedupes
+   (City, Date), and engineers calendar + lag features. **No same-day
+   leakage**: all lag features shifted by ≥1 day.
+2. `train.py` reads `data/clean_features.csv`, one-hot encodes city,
+   time-ordered 80/20 split, scales (StandardScaler for linear models),
+   trains 6 models, logs each run to MLflow (params/metrics/artifact),
+   writes leaderboard and persists best model + scaler + meta.
+3. `monitor.py` computes PSI per lag feature: training baseline (first 80%)
+   vs last 30 days; writes `data/drift_report.json` with
+   `retraining_needed`.
+4. `app.py` loads artifacts at startup, builds the exact same 15 feature
+   vector (`FEATURE_COLS` order fixed to match `train.py`), scales, and
+   predicts. Response includes AQI category per CPCB bands.
+
+## 4. Feature Contract (critical for correctness)
+
+```
+Month, DayOfWeek, DayOfYear, IsWeekend,
+AQI_lag1, AQI_lag3_avg, PM2.5_lag1, PM2.5_lag3_avg,
+PM10_lag1, PM10_lag3_avg,
+City_Bangalore, City_Chennai, City_Delhi, City_Hyderabad, City_Mumbai
+```
+`app.py` hardcodes this order and `train.py` defines it — they must stay in
+sync (regression test asserts prediction succeeds).
+
+## 5. Maintenance Guide
+
+### 5.1 Adding a city
+1. Drop `<City>.csv` in `data/` with the same schema.
+2. Add city to `CITIES` in `preprocess.py`, and — if the model is linear —
+   `FEATURE_COLS` city columns in `train.py` **and** `app.py`.
+3. `dvc repro`, retest (`pytest`), redeploy.
+
+### 5.2 Retraining cadence
+Weekly via GitHub Actions cron; manual via `dvc repro`. The quality gate
+(R² ≥ 0.85, MAE ≤ 20) protects against shipping worse models.
+
+### 5.3 When drift fires (PSI ≥ 0.2)
+1. Inspect `data/drift_report.json` → `alert_features`.
+2. Investigate cause (new pollution regime, data collection change).
+3. Retrain (`dvc repro`), verify gate metrics, redeploy container.
+
+### 5.4 DVC housekeeping
+- Remote: local `dvc-remote/` (git-ignored). Cloud remotes (S3/GCS) can be
+  added with `dvc remote add -d storage s3://bucket`.
+- Never commit DVC output files to Git (`data/*.csv`, `models/*.pkl`
+  tracked only by DVC; `data/.gitignore`/`models/.gitignore` are autogenerated
+  by DVC).
+
+### 5.5 MLflow
+- Backend: `mlruns/` locally, or `mlflow.db` for the server (already in
+  `.gitignore`).
+- Runs are additive — each training cycle adds 6 runs under experiment
+  `AQI_Forecasting`.
+
+## 6. Design Decisions (with rationale)
+
+| Decision | Rationale |
+|----------|-----------|
+| Lag features over same-day pollutants | Eliminates target leakage; forecasts usable with yesterday's data only |
+| Time-ordered split, not random | Prevents lookahead bias in time series |
+| Linear Regression wins | Simple, interpretable, best R²; no HPO needed |
+| PSI drift monitoring | Industry-standard, threshold-interpretable, cheap to run |
+| Single Dockerfile + compose override | One image for API & dashboard; avoids duplicated builds |
+| `--workers 1` MLflow on Windows | Avoids uvicorn worker spawn crash on Windows |
+| Feature order hardcoded in app.py | Prevents silent column-order mismatch across retrains |
